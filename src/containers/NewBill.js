@@ -17,9 +17,33 @@ export default class NewBill {
   }
   handleChangeFile = e => {
     e.preventDefault()
-    const file = this.document.querySelector(`input[data-testid="file"]`).files[0]
-    const filePath = e.target.value.split(/\\/g)
-    const fileName = filePath[filePath.length-1]
+
+    const input = this.document.querySelector(`input[data-testid="file"]`);
+    const file = input?.files?.[0];
+
+    if (!file) {
+      this.fileName = this.fileUrl = this.billId = null;
+      return;
+    }
+
+    // Check ext
+    const fileName = file.name;
+    const extOK = /\.(jpe?g|png)$/i.test(fileName);
+
+    const allowedMimes = new Set(['image/jpeg', 'image/jpg', 'image/png']);
+    const mimeOK = file.type ? allowedMimes.has(file.type) : true
+
+    if (!extOK || !mimeOK) {
+      alert("Le document doit être une image .jpg, .jpeg ou .png");
+      this.fileName = this.fileUrl = this.billId = null;
+      input.value = "";
+      return;
+    }
+
+    this.fileName = fileName
+
+    // const filePath = e.target.value.split(/\\/g)
+    // const fileName = filePath[filePath.length-1]
     const formData = new FormData()
     const email = JSON.parse(localStorage.getItem("user")).email
     formData.append('file', file)
