@@ -5,6 +5,7 @@
 import {screen, waitFor} from "@testing-library/dom"
 import BillsUI from "../views/BillsUI.js"
 import { bills } from "../fixtures/bills.js"
+import Bills from "../containers/Bills.js";
 import { ROUTES_PATH} from "../constants/routes.js";
 import {localStorageMock} from "../__mocks__/localStorage.js";
 
@@ -35,6 +36,45 @@ describe("Given I am connected as an employee", () => {
       const antiChrono = (a, b) => ((b - a))
       const datesSorted = [...dates].sort(antiChrono)
       expect(dates).toEqual(datesSorted)
+    })
+    test("Click on 'Nouvelle note de frais', navigates to NewBill", () => {
+      const onNavigate = jest.fn()
+      const bills = new Bills({ document, onNavigate, store: null, localStorage: window.localStorage })
+      bills.handleClickNewBill()
+      expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH.NewBill)
+    })
+    test("Click on eye icon, display modal with right image", () => {
+      // Arrange
+      document.body.innerHTML = `
+      <div id="modaleFile" class="modal">
+        <div class="modal-body"></div>
+      </div>
+      <div data-testid="icon-eye" data-bill-url="http://localhost:5678/public/test.png"></div>
+      `
+      const icon = screen.getByTestId("icon-eye")
+      $.fn.modal = jest.fn() // mock de Bootstrap modal
+      const bills = new Bills({ document, onNavigate: jest.fn(), store: null, localStorage: window.localStorage })
+
+      // Act
+      bills.handleClickIconEye(icon)
+
+      // Assert
+      const modalBody = document.querySelector("#modaleFile .modal-body")
+      expect(modalBody.innerHTML).toContain('src="http://localhost:5678/public/test.png"')
+      expect($.fn.modal).toHaveBeenCalledWith("show")
+    })
+    const makeStore = (impl) => ({
+      bills: () => ({
+        list: impl
+      })
+    })
+    test("getBills calls store.bills().list()", async () => {
+      const list = jest.fn().mockResolvedValue([])
+      const storeMock = { bills: () => ({ list }) }
+      const bills = new Bills({ document, onNavigate: jest.fn(), store: storeMock, localStorage: window.localStorage })
+    
+      await bills.getBills()
+      expect(list).toHaveBeenCalled()
     })
   })
 })
