@@ -104,6 +104,48 @@ describe("Given I am connected as an employee", () => {
       expect(handleChangeFile).toHaveBeenCalled();
       expect(fileInput.files[0].name).toBe("test.png");
     });
+
+    describe("When I upload a wrong file format", () => {
+      test("Then it should alert, reset the input and not call create", () => {
+        // Contexte minimal (UI + localStorage + instance)
+        document.body.innerHTML = NewBillUI();
+    
+        Object.defineProperty(window, "localStorage", { value: localStorageMock });
+        window.localStorage.setItem(
+          "user",
+          JSON.stringify({ type: "Employee", email: "test@email.com" })
+        );
+    
+        const onNavigate = jest.fn();
+        const newBill = new NewBill({
+          document,
+          onNavigate,
+          store: mockStore,
+          localStorage: window.localStorage,
+        });
+    
+        // On espionne l'alerte et l'API create
+        window.alert = jest.fn();
+        const createSpy = jest.spyOn(mockStore.bills(), "create");
+    
+        // Upload d'un PDF (fichier interdit)
+        const fileInput = screen.getByTestId("file");
+        const wrongFile = new File(["dummy"], "juste-un-doc.pdf", {
+          type: "application/pdf",
+        });
+    
+        fireEvent.change(fileInput, { target: { files: [wrongFile] } });
+    
+        // Attentes
+        expect(window.alert).toHaveBeenCalledWith(
+          "Le document doit être une image .jpg, .jpeg ou .png"
+        );
+        expect(fileInput.value).toBe("");       // input vidé
+        expect(newBill.fileUrl).toBeNull();     // pas d'URL
+        expect(newBill.billId).toBeNull();      // pas d'ID créé
+        expect(createSpy).not.toHaveBeenCalled(); // aucune création côté store
+      });
+    });
   })
 
   // TEST D'INTÉGRATION - POST new bill
@@ -150,7 +192,6 @@ describe("Given I am connected as an employee", () => {
       });
       const inputFile = screen.getByTestId("file");
       fireEvent.change(inputFile, { target: { files: [file] } });
-      // ! expect champs vide si pdf ou non 
       // ! Error 404 500
       // ! Test dans le cas où ça marche pas
 
