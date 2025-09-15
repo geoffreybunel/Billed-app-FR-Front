@@ -5,8 +5,27 @@
 import NewBillUI from "../views/NewBillUI.js"
 import NewBill from "../containers/NewBill.js"
 import { fireEvent, screen, waitFor } from "@testing-library/dom";
-import { ROUTES } from "../constants/routes.js";
+import { ROUTES_PATH } from "../constants/routes.js";
 import { localStorageMock } from "../__mocks__/localStorage.js";
+
+// Mock de l'API pour simuler les appels avec les données nécessaires
+jest.mock("../__mocks__/store.js", () => {
+  return {
+    __esModule: true,
+    default: {
+      bills: () => {
+        return {
+          create: jest.fn(() =>
+            Promise.resolve({ fileUrl: "test-url", key: "test-key" })
+          ),
+          list: jest.fn(() => Promise.resolve([])),
+          update: jest.fn(() => Promise.resolve()),
+        };
+      },
+    },
+  };
+});
+
 import mockStore from "../__mocks__/store.js";
 import router from "../app/Router.js";
 
@@ -29,7 +48,7 @@ describe("Given I am connected as an employee", () => {
     
       // Navigation et rendu
       const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname });
+        document.body.innerHTML = ROUTES_PATH[pathname];
       };
       document.body.innerHTML = NewBillUI();
     
@@ -86,4 +105,61 @@ describe("Given I am connected as an employee", () => {
       expect(fileInput.files[0].name).toBe("test.png");
     });
   })
+
+  // TEST D'INTÉGRATION - POST new bill
+  describe("When I am on NewBill Page and I submit the form", () => {
+    test("Then the new bill should be created and I should be redirected to the bills page", async () => {
+      // Préparation de l'environnement de test
+      Object.defineProperty(window, "localStorage", { value: localStorageMock });
+      window.localStorage.setItem(
+        "user",
+        JSON.stringify({
+          type: "Employee",
+          email: "test@email.com",
+        })
+      );
+
+      // Création d'espions pour les méthodes de l'API
+      const createBillSpy = jest.spyOn(mockStore.bills(), "create");
+      const updateBillSpy = jest.spyOn(mockStore.bills(), "update");
+
+      // Simulation de la navigation avec un mock simple
+      const onNavigate = jest.fn();
+      document.body.innerHTML = NewBillUI();
+
+      // Instanciation de la classe NewBill
+      const newBill = new NewBill({
+        document,
+        onNavigate,
+        store: mockStore,
+        localStorage: window.localStorage,
+      });
+
+      // Remplissage des champs
+      fireEvent.change(screen.getByTestId("expense-type"), { target: { value: "Transports" } });
+      fireEvent.change(screen.getByTestId("expense-name"), { target: { value: "Vol Paris-New York" } });
+      fireEvent.change(screen.getByTestId("amount"), { target: { value: 800 } });
+      fireEvent.change(screen.getByTestId("datepicker"), { target: { value: "2023-09-12" } });
+      fireEvent.change(screen.getByTestId("vat"), { target: { value: 160 } });
+      fireEvent.change(screen.getByTestId("pct"), { target: { value: 20 } });
+      fireEvent.change(screen.getByTestId("commentary"), { target: { value: "Voyage d'affaires" } });
+
+      // Simulation de l'envoi du fichier
+      const file = new File(["dummy content"], "test.png", {
+        type: "image/png",
+      });
+      const inputFile = screen.getByTestId("file");
+      fireEvent.change(inputFile, { target: { files: [file] } });
+      // ! expect champs vide si pdf ou non 
+      // ! Error 404 500
+      // ! Test dans le cas où ça marche pas
+
+      // Simulation de la soumission du formulaire
+      const form = screen.getByTestId("form-new-bill");
+      fireEvent.submit(form);
+ 
+      // Vérifier si la navigation a bien eu lieu
+      expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH.Bills);
+    });
+  });
 })
