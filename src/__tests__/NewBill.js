@@ -203,4 +203,87 @@ describe("Given I am connected as an employee", () => {
       expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH.Bills);
     });
   });
+
+  // --- Tests d'erreurs API sur update() ---
+  describe("When I submit a new bill and API returns an error", () => {
+    beforeEach(() => {
+      // État minimal pour chaque test
+      Object.defineProperty(window, "localStorage", { value: localStorageMock });
+      window.localStorage.setItem(
+        "user",
+        JSON.stringify({ type: "Employee", email: "test@email.com" })
+      );
+      document.body.innerHTML = NewBillUI();
+
+      // On va surcharger mockStore.bills() dans chaque test
+      jest.spyOn(mockStore, "bills");
+
+      // On capture les erreurs
+      console.error = jest.fn();
+    });
+
+    const fillMinimalForm = () => {
+      fireEvent.change(screen.getByTestId("expense-type"), { target: { value: "Transports" } });
+      fireEvent.change(screen.getByTestId("expense-name"), { target: { value: "Erreur test" } });
+      fireEvent.change(screen.getByTestId("amount"), { target: { value: "100" } });
+      fireEvent.change(screen.getByTestId("datepicker"), { target: { value: "2023-09-12" } });
+    };
+
+    test("Then it should log error 404 in console", async () => {
+      const newBill = new NewBill({
+        document,
+        onNavigate: jest.fn(),
+        store: mockStore,
+        localStorage: window.localStorage,
+      });
+
+      // On évite handleChangeFile en injectant des valeurs cohérentes
+      newBill.fileUrl = "url";
+      newBill.fileName = "file.png";
+      newBill.billId = "id-404";
+
+      fillMinimalForm();
+
+      // La prochaine fois que NewBill appellera store.bills(),
+      // on renvoie un objet dont update() rejette avec "Erreur 404"
+      mockStore.bills.mockImplementationOnce(() => ({
+        update: () => Promise.reject(new Error("Erreur 404")),
+        create: jest.fn(() => Promise.resolve({ fileUrl: "url", key: "id-404" })),
+        list: jest.fn(() => Promise.resolve([])),
+      }));
+
+      fireEvent.submit(screen.getByTestId("form-new-bill"));
+
+      await waitFor(() => {
+        expect(console.error).toHaveBeenCalledWith(expect.any(Error));
+      });
+    });
+
+    test("Then it should log error 500 in console", async () => {
+      const newBill = new NewBill({
+        document,
+        onNavigate: jest.fn(),
+        store: mockStore,
+        localStorage: window.localStorage,
+      });
+
+      newBill.fileUrl = "url";
+      newBill.fileName = "file.png";
+      newBill.billId = "id-500";
+
+      fillMinimalForm();
+
+      mockStore.bills.mockImplementationOnce(() => ({
+        update: () => Promise.reject(new Error("Erreur 500")),
+        create: jest.fn(() => Promise.resolve({ fileUrl: "url", key: "id-500" })),
+        list: jest.fn(() => Promise.resolve([])),
+      }));
+
+      fireEvent.submit(screen.getByTestId("form-new-bill"));
+
+      await waitFor(() => {
+        expect(console.error).toHaveBeenCalledWith(expect.any(Error));
+      });
+    });
+  });
 })
