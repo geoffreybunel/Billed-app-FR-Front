@@ -192,8 +192,6 @@ describe("Given I am connected as an employee", () => {
       });
       const inputFile = screen.getByTestId("file");
       fireEvent.change(inputFile, { target: { files: [file] } });
-      // ! Error 404 500
-      // ! Test dans le cas où ça marche pas
 
       // Simulation de la soumission du formulaire
       const form = screen.getByTestId("form-new-bill");
