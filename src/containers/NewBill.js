@@ -17,7 +17,7 @@ export default class NewBill {
   }
   handleChangeFile = e => {
     e.preventDefault()
-
+    //* modified
     const input = this.document.querySelector(`input[data-testid="file"]`);
     const file = input?.files?.[0];
 
@@ -41,7 +41,7 @@ export default class NewBill {
     }
 
     this.fileName = fileName
-
+    //*
     // const filePath = e.target.value.split(/\\/g)
     // const fileName = filePath[filePath.length-1]
     const formData = new FormData()

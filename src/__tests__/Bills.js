@@ -2,11 +2,13 @@
  * @jest-environment jsdom
  */
 
+// For integration test
 import mockStore from "../__mocks__/store";
 jest.mock("../app/Store.js", () => ({
   __esModule: true,
   default: mockStore,
 }));
+//
 
 import {screen, waitFor} from "@testing-library/dom"
 import BillsUI from "../views/BillsUI.js"
@@ -33,8 +35,7 @@ describe("Given I am connected as an employee", () => {
       await waitFor(() => screen.getByTestId('icon-window'))
       const windowIcon = screen.getByTestId('icon-window')
       //to-do write expect expression
-      expect(windowIcon.classList.contains('active-icon'));
-
+      expect(windowIcon.classList.contains('active-icon')); //* added
     })
     test("Then bills should be ordered from earliest to latest", () => {
       document.body.innerHTML = BillsUI({ data: bills })
@@ -43,14 +44,16 @@ describe("Given I am connected as an employee", () => {
       const datesSorted = [...dates].sort(antiChrono)
       expect(dates).toEqual(datesSorted)
     })
+
+    // * Tests added
     test("Click on 'Nouvelle note de frais', navigates to NewBill", () => {
       const onNavigate = jest.fn()
       const bills = new Bills({ document, onNavigate, store: null, localStorage: window.localStorage })
       bills.handleClickNewBill()
       expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH.NewBill)
     })
+
     test("Click on eye icon, display modal with right image", () => {
-      // Arrange
       document.body.innerHTML = `
       <div id="modaleFile" class="modal">
         <div class="modal-body"></div>
@@ -69,11 +72,12 @@ describe("Given I am connected as an employee", () => {
       expect(modalBody.innerHTML).toContain('src="http://localhost:5678/public/test.png"')
       expect($.fn.modal).toHaveBeenCalledWith("show")
     })
-    const makeStore = (impl) => ({
-      bills: () => ({
-        list: impl
-      })
-    })
+    // const makeStore = (impl) => ({
+    //   bills: () => ({
+    //     list: impl
+    //   })
+    // })
+
     test("getBills calls store.bills().list()", async () => {
       const list = jest.fn().mockResolvedValue([])
       const storeMock = { bills: () => ({ list }) }
@@ -85,7 +89,7 @@ describe("Given I am connected as an employee", () => {
   })
 })
 
-// Integration test
+// * Integration test
 describe("Given I am a user connected as Employee", () => {
   describe("When I navigate to Bills Page", () => {
     test("fetches bills from mock API GET", async () => {

@@ -8,7 +8,7 @@ import { fireEvent, screen, waitFor } from "@testing-library/dom";
 import { ROUTES_PATH } from "../constants/routes.js";
 import { localStorageMock } from "../__mocks__/localStorage.js";
 
-// Mock de l'API pour simuler les appels avec les données nécessaires
+//* Mock de l'API pour simuler les appels avec les données nécessaires - pour test integration
 jest.mock("../__mocks__/store.js", () => {
   return {
     __esModule: true,
@@ -25,6 +25,7 @@ jest.mock("../__mocks__/store.js", () => {
     },
   };
 });
+//*
 
 import mockStore from "../__mocks__/store.js";
 import router from "../app/Router.js";
@@ -38,6 +39,7 @@ describe("Given I am connected as an employee", () => {
       //to-do write assertion
     })
 
+    // * Tests added
     test("Should submit the form with valid data", async () => {
       // Mock du localStorage
       Object.defineProperty(window, "localStorage", { value: localStorageMock });
@@ -148,7 +150,7 @@ describe("Given I am connected as an employee", () => {
     });
   })
 
-  // TEST D'INTÉGRATION - POST new bill
+  // * Integration test - POST new bill
   describe("When I am on NewBill Page and I submit the form", () => {
     test("Then the new bill should be created and I should be redirected to the bills page", async () => {
       // Préparation de l'environnement de test
